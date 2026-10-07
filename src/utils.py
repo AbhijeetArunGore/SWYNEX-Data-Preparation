@@ -38,3 +38,12 @@ def parse_ids_mapping(ids_raw_text: str) -> dict:
                 desc = 'Not Available / Unmapped'
             mapping_dicts[current_key][v_id] = desc
     return mapping_dicts
+
+
+def convert_age_to_midpoint(age_str: str) -> float:
+    """Convert age bracket string to numerical midpoint."""
+    age_map = {
+        '[0-10)': 5.0, '[10-20)': 15.0, '[20-30)': 25.0, '[30-40)': 35.0, '[40-50)': 45.0,
+        '[50-60)': 55.0, '[60-70)': 65.0, '[70-80)': 75.0, '[80-90)': 85.0, '[90-100)': 95.0
+    }
+    return age_map.get(str(age_str).strip(), np.nan)
