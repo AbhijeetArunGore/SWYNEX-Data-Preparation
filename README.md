@@ -152,3 +152,9 @@ This prepared dataset serves as the standardized clinical baseline for:
 **Abhijeet Arun Gore**  
 Data Science Intern, SWYNEX Technologies  
 GitHub: [AbhijeetArunGore](https://github.com/AbhijeetArunGore)
+
+---
+
+## License & Attribution
+This project is created for internship evaluation at **SWYNEX Technologies**.
+Dataset sourced from UCI Machine Learning Repository.
