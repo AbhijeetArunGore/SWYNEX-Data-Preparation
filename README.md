@@ -67,3 +67,19 @@ graph TD
 ```
 
 ---
+
+## Key Data-Quality Issues & Treatments
+
+| Issue Identified | Treatment Applied |
+| :--- | :--- |
+| **Implicit Missing Values (`?`)** | Replaced with standard `NaN` and imputed contextually based on clinical meaning. |
+| **Extreme Missingness (`weight` >96.8%)** | Dropped column to eliminate noise and artificial variance. |
+| **Administrative Missingness (`payer_code`, `medical_specialty`)** | Retained as explicit `'Missing'` category (informative missingness). |
+| **Demographic Missingness (`race` 2.23%)** | Imputed as `'Unknown'` to preserve valid encounter records. |
+| **Invalid Demographics (`gender` 3 records)** | Filtered out 3 invalid records (<0.003% of dataset). |
+| **Duplicate Records** | 0 exact row duplicates; 101,763 unique encounter IDs preserved. |
+| **Incorrect Data Types & IDs** | Mapped integer keys (`admission_type_id`, etc.) via `IDS_mapping.csv` to descriptive text labels. |
+| **Zero-Variance Features (`examide`, `citoglipton`)** | Dropped constant features carrying zero statistical entropy. |
+| **High-Cardinality Diagnoses** | Mapped 900+ ICD-9 codes into 9 primary clinical disease categories (Circulatory, Diabetes, Respiratory, etc.). |
+
+---
