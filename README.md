@@ -147,3 +147,8 @@ This prepared dataset serves as the standardized clinical baseline for:
 - **Task 3**: Predictive Machine Learning Modeling for 30-Day Hospital Readmission Risk.
 
 ---
+
+## Author
+**Abhijeet Arun Gore**  
+Data Science Intern, SWYNEX Technologies  
+GitHub: [AbhijeetArunGore](https://github.com/AbhijeetArunGore)
