@@ -1,18 +1,21 @@
-"""Preprocessing utility functions for SWYNEX Data Preparation."""
+"""SWYNEX Data Preparation Utility Module.
+
+Provides modular functions for clinical data cleaning, ID mapping,
+ICD-9 disease categorization, and validation.
+"""
 import pandas as pd
 import numpy as np
 
 def normalize_lab_tests(df: pd.DataFrame) -> pd.DataFrame:
-    """Normalize lab test missing values to 'Not Tested'."""
+    """Normalize missing lab test entries to 'Not Tested' category."""
     df = df.copy()
     for col in ['max_glu_serum', 'A1Cresult']:
         if col in df.columns:
             df[col] = df[col].fillna('Not Tested').replace('None', 'Not Tested')
     return df
 
-
 def parse_ids_mapping(ids_raw_text: str) -> dict:
-    """Parse raw text of IDS_mapping.csv into relational dictionaries."""
+    """Parse relational ID lookup table into dictionary mappings."""
     lines = ids_raw_text.split('\n')
     mapping_dicts = {'admission_type_id': {}, 'discharge_disposition_id': {}, 'admission_source_id': {}}
     current_key = None
@@ -39,18 +42,16 @@ def parse_ids_mapping(ids_raw_text: str) -> dict:
             mapping_dicts[current_key][v_id] = desc
     return mapping_dicts
 
-
 def convert_age_to_midpoint(age_str: str) -> float:
-    """Convert age bracket string to numerical midpoint."""
+    """Convert age bracket string (e.g. '[50-60)') to numeric midpoint value (55.0)."""
     age_map = {
         '[0-10)': 5.0, '[10-20)': 15.0, '[20-30)': 25.0, '[30-40)': 35.0, '[40-50)': 45.0,
         '[50-60)': 55.0, '[60-70)': 65.0, '[70-80)': 75.0, '[80-90)': 85.0, '[90-100)': 95.0
     }
     return age_map.get(str(age_str).strip(), np.nan)
 
-
 def map_icd9_category(code) -> str:
-    """Map raw ICD-9 diagnosis code to 9 primary clinical disease categories."""
+    """Map numeric/alphanumeric ICD-9 diagnosis code to 9 clinical categories."""
     if pd.isna(code) or str(code).strip() in ['?', 'Unknown', '']:
         return 'Missing/Unknown'
     code_str = str(code).strip()
