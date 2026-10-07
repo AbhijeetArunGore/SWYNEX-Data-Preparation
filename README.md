@@ -133,3 +133,10 @@ pytest tests/
 ```
 
 ---
+
+## Output
+The final cleaned dataset is stored in `data/processed/`:
+- `diabetic_data_clean.csv` (101,763 rows x 47 features, 0 null values)
+- `diabetic_data_clean.parquet` (Optimized column-oriented binary format)
+
+---
