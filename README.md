@@ -83,3 +83,34 @@ graph TD
 | **High-Cardinality Diagnoses** | Mapped 900+ ICD-9 codes into 9 primary clinical disease categories (Circulatory, Diabetes, Respiratory, etc.). |
 
 ---
+
+## Preprocessing Assumptions & Decisions
+
+Every major cleaning decision was framed under the **Problem → Decision → Reason** matrix:
+
+1. **Implicit Missing Indicators (`?`)**  
+   *Problem*: Raw dataset encodes missingness as `'?'` strings.  
+   *Decision*: Converted all `'?'` entries to standard `NaN`.  
+   *Reason*: Standardizes pandas missingness handling and prevents placeholder strings from corrupting statistical functions.
+
+2. **Extreme Missingness in `weight` (96.85%)**  
+   *Problem*: `weight` feature is missing in 98,569 out of 101,766 records.  
+   *Decision*: Excluded `weight` feature from the dataset.  
+   *Reason*: Imputing >96% of data would introduce extreme artificial bias and noise without providing clinical value.
+
+3. **Informative Missingness in Administrative Features (`payer_code` & `medical_specialty`)**  
+   *Problem*: High missing rates in `payer_code` (39.56%) and `medical_specialty` (49.08%).  
+   *Decision*: Encoded missing values as an explicit category `'Missing'`.  
+   *Reason*: Missingness in administrative attributes often correlates with self-pay/uninsured status or unassigned specialty (informative missingness); preserving it avoids dropping ~50% of hospital encounters.
+
+4. **Zero-Variance Features (`examide` & `citoglipton`)**  
+   *Problem*: `examide` and `citoglipton` contain identical values (`'No'`) across all rows.  
+   *Decision*: Dropped both columns.  
+   *Reason*: Zero variance features provide zero predictive signal or information entropy.
+
+5. **High Cardinality in ICD-9 Diagnosis Codes**  
+   *Problem*: Raw diagnosis columns (`diag_1`, `diag_2`, `diag_3`) contain over 900 distinct codes.  
+   *Decision*: Mapped codes into 9 clinical categories (Circulatory, Respiratory, Digestive, Diabetes, Injury, Musculoskeletal, Genitourinary, Neoplasms, Other).  
+   *Reason*: Reduces feature space sparsity, mitigates overfitting risk, and standardizes features according to clinical literature.
+
+---
