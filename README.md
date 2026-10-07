@@ -114,3 +114,22 @@ Every major cleaning decision was framed under the **Problem → Decision → Re
    *Reason*: Reduces feature space sparsity, mitigates overfitting risk, and standardizes features according to clinical literature.
 
 ---
+
+## Tools & Setup
+- **Python 3.12**
+- **Dependencies**: `pandas`, `numpy`, `matplotlib`, `seaborn`, `pyarrow`, `pytest`
+
+### Setup Instructions
+```bash
+# Clone the repository
+git clone https://github.com/AbhijeetArunGore/SWYNEX-Data-Preparation.git
+cd SWYNEX-Data-Preparation
+
+# Install requirements
+pip install -r requirements.txt
+
+# Run unit tests
+pytest tests/
+```
+
+---
