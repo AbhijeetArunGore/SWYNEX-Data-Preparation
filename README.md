@@ -140,3 +140,10 @@ The final cleaned dataset is stored in `data/processed/`:
 - `diabetic_data_clean.parquet` (Optimized column-oriented binary format)
 
 ---
+
+## Future Scope
+This prepared dataset serves as the standardized clinical baseline for:
+- **Task 2**: Comprehensive Exploratory Data Analysis (EDA) & Clinical Hypothesis Testing.
+- **Task 3**: Predictive Machine Learning Modeling for 30-Day Hospital Readmission Risk.
+
+---
