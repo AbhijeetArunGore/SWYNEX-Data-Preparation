@@ -47,3 +47,35 @@ def convert_age_to_midpoint(age_str: str) -> float:
         '[50-60)': 55.0, '[60-70)': 65.0, '[70-80)': 75.0, '[80-90)': 85.0, '[90-100)': 95.0
     }
     return age_map.get(str(age_str).strip(), np.nan)
+
+
+def map_icd9_category(code) -> str:
+    """Map raw ICD-9 diagnosis code to 9 primary clinical disease categories."""
+    if pd.isna(code) or str(code).strip() in ['?', 'Unknown', '']:
+        return 'Missing/Unknown'
+    code_str = str(code).strip()
+    if code_str.startswith('V') or code_str.startswith('E'):
+        return 'Other'
+    try:
+        val = float(code_str)
+    except ValueError:
+        return 'Other'
+    
+    if (390 <= val <= 459) or val == 785:
+        return 'Circulatory'
+    elif (460 <= val <= 519) or val == 786:
+        return 'Respiratory'
+    elif (520 <= val <= 579) or val == 787:
+        return 'Digestive'
+    elif int(val) == 250:
+        return 'Diabetes'
+    elif 800 <= val <= 999:
+        return 'Injury'
+    elif 710 <= val <= 739:
+        return 'Musculoskeletal'
+    elif (580 <= val <= 629) or val == 788:
+        return 'Genitourinary'
+    elif 140 <= val <= 239:
+        return 'Neoplasms'
+    else:
+        return 'Other'
