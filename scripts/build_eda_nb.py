@@ -2,144 +2,86 @@ import os
 import nbformat as nbf
 
 nb_path = os.path.join('notebooks', '02_exploratory_data_analysis.ipynb')
-nb = nbf.v4.new_notebook()
-nb.metadata['language_info'] = {'name': 'python'}
+with open(nb_path, 'r', encoding='utf-8') as f:
+    nb = nbf.read(f, as_version=4)
 
-# Section 1
-m1 = """# Exploratory Data Analysis of Diabetes Hospital Encounters
-### SWYNEX Technologies — Task 2: Exploratory Data Analysis (EDA)
-**Author:** Abhijeet Arun Gore  
-**Role:** Data Science Intern at SWYNEX Technologies  
-**Dataset:** Diabetes 130-US Hospitals (1999–2008) — Cleaned Inpatient Dataset from Task 1  
-**Repository:** [SWYNEX-Data-Preparation](https://github.com/AbhijeetArunGore/SWYNEX-Data-Preparation)  
+m4 = """---
+## Section 4 — Data Dictionary and Variable Groups
+To structure our exploratory analysis, we categorize the 54 features of the prepared dataset into seven functional clinical and administrative domains. This prevents misleading analytical treatments—such as calculating continuous averages for relational keys or treating record IDs as clinical predictors.
 
----
-
-## Section 1 — Title and Objective
-
-### Purpose of Exploratory Data Analysis (EDA)
-Exploratory Data Analysis is a foundational discipline in clinical data science. Its goal is not simply to plot distributions or calculate summary statistics, but to uncover the underlying data-generating mechanisms, detect data quality anomalies, validate empirical assumptions, test clinical hypotheses, and identify structural constraints prior to statistical or machine learning modeling.
-
-### Historical Hospital Context
-This study investigates a standardized cohort of **101,763 inpatient hospital encounters** occurring between **1999 and 2008** across **130 hospital facilities** in the United States. Each observation corresponds to an inpatient admission of an adult diabetic patient where hospital length of stay ranged from 1 to 14 days, and laboratory tests and pharmaceutical treatments were administered.
-
-### Analytical and Business Questions
-1. **Target Outcome Prevalence & Imbalance**: What is the baseline distribution of hospital readmissions, specifically within 30 days (`<30`), and what degree of class imbalance exists?
-2. **Prior Utilization Impact**: Does prior healthcare utilization (inpatient admissions, emergency room visits, and outpatient encounters in the preceding 12 months) correlate with early readmission risk?
-3. **Clinical Complexity & Acuity**: How do inpatient duration (`time_in_hospital`), pharmacological burden (`num_medications`), and diagnostic volume (`number_diagnoses`) relate to post-discharge stability?
-4. **Discharge Planning & Transitions**: How do post-acute disposition destinations (e.g., Skilled Nursing Facilities, Rehabilitation Facilities, Home Health) compare in readmission risk?
-5. **Glycemic Monitoring Adherence**: Does the documented performance of glycemic control testing (HbA1c tests) correlate with patient outcomes?
-6. **Data Leakage & Clustering Risks**: Does the presence of 30,248 repeat admissions across 71,515 distinct patients introduce intra-subject correlation, and which terminal discharge events must be filtered prior to predictive modeling?
-
-### Descriptive Analysis vs. Predictive Modeling
-**Critical Methodological Distinction**: Task 2 is strictly exploratory and descriptive. Associations identified in this observational dataset **do not establish clinical causation**, nor do they guarantee predictive utility. Task 2 establishes the empirical evidence baseline and anti-leakage rules required for future Task 3 feature engineering and machine learning model development.
+| Functional Domain | Key Variables Included | Data Types | Analytical Role & Modeling Treatment |
+| :--- | :--- | :--- | :--- |
+| **Identifiers** | `encounter_id`, `patient_nbr` | Integer / Object | Primary keys. `encounter_id` identifies the unit of observation; `patient_nbr` is the patient-level grouping key for leak-free cross-validation. Never used as predictive features. |
+| **Demographics** | `age`, `age_midpoint`, `gender`, `race` | Categorical / Float | Baseline patient attributes. `age_midpoint` converts 10-year brackets into continuous midpoints. |
+| **Healthcare Utilization** | `number_inpatient`, `number_emergency`, `number_outpatient` | Integer Counts | Counts of prior encounters in the preceding 12 months. Extreme right skew; captures historical acute acuity and healthcare dependency. |
+| **Inpatient Complexity** | `time_in_hospital`, `num_medications`, `num_procedures`, `num_lab_procedures`, `number_diagnoses` | Integer Counts | Measures of encounter resource intensity and multi-morbidity burden during the index admission. |
+| **Diagnoses** | `diag_1`, `diag_2`, `diag_3`, `diag_1_category`, `diag_2_category`, `diag_3_category` | Categorical | Primary, secondary, and tertiary diagnoses mapped to 9 high-level clinical categories from ICD-9 codes. |
+| **Administrative & Transfer** | `admission_type_desc`, `discharge_disposition_desc`, `admission_source_desc`, `payer_code`, `medical_specialty` | Categorical | Operational characteristics of hospital admission and discharge pathways. Contains key risk stratifiers and terminal status leakage indicators (`Expired`). |
+| **Pharmacotherapy & Glycemia** | `max_glu_serum`, `A1Cresult`, `change`, `diabetesMed`, 23 antidiabetic drug columns | Categorical | Glycemic control laboratory results (`Not Tested`, `Norm`, `>7`, `>8`), overall medication change status, and individual medication titration levels. |
+| **Target Outcome** | `readmitted` | Categorical (`NO`, `>30`, `<30`) | Primary clinical outcome. `<30` indicates early readmission within the benchmark 30-day window; `>30` represents late readmission; `NO` indicates no recorded readmission. |
 """
 
-# Section 2
-m2 = """---
-## Section 2 — Imports and Configuration
-We initialize essential scientific computing, visualization, and statistical libraries, setting global parameters for reproducibility and professional reporting aesthetics.
+c4 = """# Summary of feature distribution across functional domains
+domain_mapping = {
+    'Identifiers': ['encounter_id', 'patient_nbr'],
+    'Demographics': ['age', 'age_midpoint', 'gender', 'race'],
+    'Utilization': ['number_inpatient', 'number_emergency', 'number_outpatient'],
+    'Inpatient Complexity': ['time_in_hospital', 'num_medications', 'num_procedures', 'num_lab_procedures', 'number_diagnoses'],
+    'Diagnoses': ['diag_1', 'diag_2', 'diag_3', 'diag_1_category', 'diag_2_category', 'diag_3_category'],
+    'Administrative & Transitions': ['admission_type_id', 'admission_type_desc', 'discharge_disposition_id', 'discharge_disposition_desc', 'admission_source_id', 'admission_source_desc', 'payer_code', 'medical_specialty'],
+    'Pharmacotherapy & Glycemia': ['max_glu_serum', 'A1Cresult', 'change', 'diabetesMed'] + [col for col in df.columns if col in ['metformin', 'repaglinide', 'nateglinide', 'chlorpropamide', 'glimepiride', 'acetohexamide', 'glipizide', 'glyburide', 'tolbutamide', 'pioglitazone', 'rosiglitazone', 'acarbose', 'miglitol', 'troglitazone', 'tolazamide', 'insulin', 'glyburide-metformin', 'glipizide-metformin', 'glimepiride-pioglitazone', 'metformin-rosiglitazone', 'metformin-pioglitazone']],
+    'Target Outcome': ['readmitted']
+}
+
+domain_summary = pd.DataFrame([
+    {'Domain': k, 'Feature Count': len(v), 'Sample Features': ', '.join(v[:3]) + ('...' if len(v) > 3 else '')}
+    for k, v in domain_mapping.items()
+])
+
+print("=== CLINICAL DOMAIN BREAKDOWN (54 FEATURES) ===")
+domain_summary
 """
 
-c2 = """import os
-import sys
-import warnings
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-from scipy import stats
+m5 = """---
+## Section 5 — Descriptive Statistics
 
-# Add project root to path for modular utilities
-sys.path.insert(0, os.path.abspath('..'))
-from src.eda import (
-    profile_dataset,
-    compute_numerical_summary,
-    compute_categorical_summary,
-    compute_bivariate_rates,
-    group_continuous_stats,
-    perform_mann_whitney_u,
-    perform_chi_square,
-    compute_correlation_matrix
-)
+### Numerical Feature Analysis
+We calculate the complete suite of central tendency, dispersion, and distribution asymmetry metrics across all numerical variables.
 
-# Configure styling aesthetics
-sns.set_theme(style="whitegrid", palette="muted")
-plt.rcParams['font.sans-serif'] = 'Segoe UI'
-plt.rcParams['figure.dpi'] = 120
-plt.rcParams['axes.edgecolor'] = '#cccccc'
-plt.rcParams['axes.linewidth'] = 0.8
-
-# Global display and seed options
-pd.set_option('display.max_columns', 60)
-pd.set_option('display.max_rows', 100)
-pd.set_option('display.width', 1000)
-pd.set_option('display.float_format', lambda x: f'{x:.3f}' if abs(x) < 0.01 else f'{x:.2f}')
-RANDOM_STATE = 42
-np.random.seed(RANDOM_STATE)
-
-print("Environment initialized: Scientific packages loaded, styling active, random seed = 42.")
+**Clinical Insight on Mean vs. Median**:
+For symmetric variables such as `num_lab_procedures` (Mean = 43.10, Median = 44.0, Skew = -0.24), the mean provides a representative measure of clinical activity. Conversely, for severely right-skewed utilization metrics such as `number_inpatient` (Mean = 0.64, Median = 0.0, Skew = +3.61) and `number_emergency` (Mean = 0.20, Median = 0.0, Skew = +22.86), the mean is heavily distorted by rare frequent-utilizer outliers. In these variables, the **median and Interquartile Range (IQR)** represent the only mathematically sound summary statistics.
 """
 
-# Section 3
-m3 = """---
-## Section 3 — Load and Validate the Prepared Dataset
-We load the exact cleaned clinical dataset exported in Task 1 (`data/processed/diabetic_data_clean.csv`) and execute comprehensive data-integrity checks comparing actual runtime properties with Task 1 output specifications.
+c5_num = """num_cols = ['time_in_hospital', 'num_lab_procedures', 'num_procedures', 'num_medications',
+            'number_outpatient', 'number_emergency', 'number_inpatient', 'number_diagnoses', 'age_midpoint']
+
+num_summary = compute_numerical_summary(df, columns=num_cols)
+print("=== COMPREHENSIVE NUMERICAL DESCRIPTIVE STATISTICS ===")
+num_summary
 """
 
-c3 = """# Robust relative path handling
-possible_paths = [
-    os.path.join('data', 'processed', 'diabetic_data_clean.csv'),
-    os.path.join('..', 'data', 'processed', 'diabetic_data_clean.csv')
-]
-
-data_path = None
-for p in possible_paths:
-    if os.path.exists(p):
-        data_path = p
-        break
-
-if data_path is None:
-    raise FileNotFoundError("Cleaned dataset not found in expected repository paths. Ensure Task 1 export exists.")
-
-df = pd.read_csv(data_path)
-profile = profile_dataset(df)
-
-print("=== DATASET VALIDATION REPORT ===")
-print(f"File Path: {data_path}")
-print(f"Total Rows: {profile['total_rows']:,}")
-print(f"Total Columns: {profile['total_columns']}")
-print(f"Memory Footprint: {profile['memory_mb']} MB")
-print(f"Exact Duplicate Rows: {profile['exact_duplicates']}")
-print(f"Unique Patients: {profile['unique_patients']:,}")
-print(f"Repeat Admission Percentage: {profile['repeat_admission_pct']}%")
-print(f"Total Unhandled Null Values: {profile['total_null_values']}")
-
-# Assertions for integrity
-assert profile['total_rows'] == 101763, f"Expected 101,763 rows, found {profile['total_rows']}"
-assert profile['total_null_values'] == 0, f"Found {profile['total_null_values']} unhandled nulls"
-assert 'readmitted' in df.columns, "Target column 'readmitted' is missing!"
-print("\\nIntegrity Check: PASSED. Dataset strictly conforms to Task 1 specifications.")
+m5_cat = """### Categorical Feature Summary
+We evaluate cardinalities, top frequency counts, and dominant categories across all demographic, administrative, and clinical features.
 """
 
-c3_sample = """# Display sample records without exposing full patient identities
-sample_cols = ['encounter_id', 'age', 'gender', 'race', 'time_in_hospital', 'num_medications', 'number_inpatient', 'diag_1_category', 'readmitted']
-print("=== SAMPLE CLINICAL ENCOUNTERS ===")
-df[sample_cols].head(5)
+c5_cat = """cat_cols = ['race', 'gender', 'age', 'admission_type_desc', 'discharge_disposition_desc',
+            'admission_source_desc', 'diag_1_category', 'max_glu_serum', 'A1Cresult', 'change', 'diabetesMed', 'readmitted']
+
+cat_summary = compute_categorical_summary(df, columns=cat_cols)
+print("=== CATEGORICAL FEATURE ATTRIBUTE FREQUENCIES ===")
+cat_summary
 """
 
-cells = [
-    nbf.v4.new_markdown_cell(m1),
-    nbf.v4.new_markdown_cell(m2),
-    nbf.v4.new_code_cell(c2),
-    nbf.v4.new_markdown_cell(m3),
-    nbf.v4.new_code_cell(c3),
-    nbf.v4.new_code_cell(c3_sample)
-]
-
-nb['cells'] = cells
+nb.cells.extend([
+    nbf.v4.new_markdown_cell(m4),
+    nbf.v4.new_code_cell(c4),
+    nbf.v4.new_markdown_cell(m5),
+    nbf.v4.new_code_cell(c5_num),
+    nbf.v4.new_markdown_cell(m5_cat),
+    nbf.v4.new_code_cell(c5_cat)
+])
 
 with open(nb_path, 'w', encoding='utf-8') as f:
     nbf.write(nb, f)
 
-print(f"Initialized {nb_path} with Sections 1-3.")
+print(f"Updated {nb_path} with Sections 4 and 5.")
