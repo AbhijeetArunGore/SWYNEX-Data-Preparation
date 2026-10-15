@@ -133,3 +133,105 @@ def compute_categorical_summary(
         })
 
     return pd.DataFrame(records)
+
+
+def compute_bivariate_rates(
+    df: pd.DataFrame,
+    group_col: str,
+    target_col: str = 'readmitted',
+    min_count: int = 1
+) -> pd.DataFrame:
+    """Calculate encounter counts and readmission rates across categorical levels.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Input clinical dataset.
+    group_col : str
+        Feature name to group by.
+    target_col : str, default='readmitted'
+        Outcome column containing categories such as '<30', '>30', 'NO'.
+    min_count : int, default=1
+        Minimum group sample size threshold for filtering sparse levels.
+
+    Returns
+    -------
+    pd.DataFrame
+        Table with Group_Value, Total_Encounters, Cohort_Percentage,
+        Readmit_30d_Count, Readmit_30d_Rate_Pct, Any_Readmit_Rate_Pct.
+    """
+    if group_col not in df.columns or target_col not in df.columns:
+        raise ValueError(f"Columns '{group_col}' or '{target_col}' not found in DataFrame.")
+
+    total_encounters = len(df)
+    grouped = df.groupby(group_col, observed=True)
+
+    records = []
+    for val, grp in grouped:
+        n = len(grp)
+        if n < min_count:
+            continue
+        c_30d = int((grp[target_col] == '<30').sum())
+        c_any = int((grp[target_col].isin(['<30', '>30'])).sum())
+        rate_30d = round((c_30d / n) * 100.0, 2) if n > 0 else 0.0
+        rate_any = round((c_any / n) * 100.0, 2) if n > 0 else 0.0
+        cohort_pct = round((n / total_encounters) * 100.0, 2) if total_encounters > 0 else 0.0
+
+        records.append({
+            'Group_Value': str(val),
+            'Total_Encounters': n,
+            'Cohort_Percentage': cohort_pct,
+            'Readmit_30d_Count': c_30d,
+            'Readmit_30d_Rate_Pct': rate_30d,
+            'Any_Readmit_Rate_Pct': rate_any
+        })
+
+    out_df = pd.DataFrame(records)
+    if not out_df.empty:
+        out_df = out_df.sort_values(by='Total_Encounters', ascending=False).reset_index(drop=True)
+    return out_df
+
+
+def group_continuous_stats(
+    df: pd.DataFrame,
+    continuous_col: str,
+    group_col: str
+) -> pd.DataFrame:
+    """Calculate distributional statistics of a continuous variable grouped by an attribute.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Input clinical dataset.
+    continuous_col : str
+        Numerical column to evaluate.
+    group_col : str
+        Categorical grouping column.
+
+    Returns
+    -------
+    pd.DataFrame
+        Aggregated statistics per group including count, mean, std, median, IQR.
+    """
+    if continuous_col not in df.columns or group_col not in df.columns:
+        raise ValueError(f"Requested columns not present in DataFrame.")
+
+    records = []
+    for val, grp in df.groupby(group_col, observed=True):
+        s = grp[continuous_col].dropna()
+        q25 = float(s.quantile(0.25)) if len(s) > 0 else 0.0
+        q75 = float(s.quantile(0.75)) if len(s) > 0 else 0.0
+
+        records.append({
+            'Group': str(val),
+            'Count': int(len(s)),
+            'Mean': round(float(s.mean()), 2) if len(s) > 0 else 0.0,
+            'Std': round(float(s.std()), 2) if len(s) > 1 else 0.0,
+            'Median': round(float(s.median()), 2) if len(s) > 0 else 0.0,
+            'IQR': round(q75 - q25, 2),
+            'Min': round(float(s.min()), 2) if len(s) > 0 else 0.0,
+            'Max': round(float(s.max()), 2) if len(s) > 0 else 0.0
+        })
+
+    return pd.DataFrame(records)
+
