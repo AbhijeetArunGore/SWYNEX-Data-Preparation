@@ -5,98 +5,114 @@ nb_path = os.path.join('notebooks', '02_exploratory_data_analysis.ipynb')
 with open(nb_path, 'r', encoding='utf-8') as f:
     nb = nbf.read(f, as_version=4)
 
-m8 = """---
-## Section 8 — Target/Outcome Analysis
+m9 = """---
+## Section 9 — Bivariate Analysis and Clinical Relationships
 
-### Outcome Variable Definitions & Empirical Distribution
-In the prepared dataset, the primary outcome is recorded in the `readmitted` feature, containing three distinct clinical categories:
-- **`NO`**: No recorded readmission within the historical encounter capture window.
-- **`>30`**: Readmission occurred more than 30 days following the index hospital discharge.
-- **`<30`**: Readmission occurred within 30 days of hospital discharge.
-
-### Binary Classification Target Formulations for Future Modeling
-When framing readmission prediction as a binary classification problem for Task 3, two competing definitions exist in health informatics literature:
-1. **Early Readmission Benchmark (CMS Protocol)**: `<30` (Positive Class, 1) vs. `NO` and `>30` (Negative Class, 0). This models the 30-day readmission window monitored by the Centers for Medicare & Medicaid Services (CMS) Hospital Readmissions Reduction Program (HRRP).
-2. **Any Recorded Readmission**: `<30` and `>30` (Positive Class, 1) vs. `NO` (Negative Class, 0). This models general patient recidivism and chronic disease instability.
-
-**Methodological Warning**: These definitions are fundamentally distinct and must never be treated as equivalent. Definition A isolates acute post-discharge breakdown, whereas Definition B captures generalized chronic disease burden.
+We evaluate relationships between patient features and readmission outcomes, reporting normalized subgroup rates, sample denominators, and clinical implications.
 """
 
-c8 = """# Compute exact outcome metrics
-counts_3class = df['readmitted'].value_counts()[['NO', '>30', '<30']]
-pcts_3class = (counts_3class / len(df)) * 100
-
-df['readmit_30d'] = (df['readmitted'] == '<30').astype(int)
-df['readmit_any'] = (df['readmitted'] != 'NO').astype(int)
-
-target_summary = pd.DataFrame({
-    'Readmission Category': counts_3class.index,
-    'Encounter Count': counts_3class.values,
-    'Cohort Percentage (%)': pcts_3class.values,
-    'Clinical Definition': [
-        'No readmission recorded in historical capture window',
-        'Late readmission (>30 days post-discharge)',
-        'Early readmission within CMS 30-day penalty threshold'
-    ]
-})
-
-print("=== HOSPITAL READMISSION OUTCOME PREVALENCE ===")
-target_summary
+c9_inp = """# 1. Readmission Risk vs. Prior Inpatient Utilization
+inp_bivariate = compute_bivariate_rates(df, group_col='number_inpatient', target_col='readmitted')
+print("=== PRIOR INPATIENT ADMISSIONS VS. READMISSION RATES ===")
+inp_bivariate.head(8)
 """
 
-m8_vis = """### Visualizing Class Distribution and Target Imbalance
-We display the three-class outcome distribution alongside the binary 30-day early readmission formulation.
-"""
+c9_inp_vis = """# Plot prior inpatient visits vs. 30-day readmission rate
+filtered_inp = inp_bivariate[inp_bivariate['Total_Encounters'] >= 100].copy()
+filtered_inp['Inpatient_Visits'] = filtered_inp['Group_Value'].astype(int)
+filtered_inp = filtered_inp.sort_values(by='Inpatient_Visits')
 
-c8_vis = """fig, axes = plt.subplots(1, 2, figsize=(14, 5.2))
+fig, ax1 = plt.subplots(figsize=(10, 5))
+color_b = '#2b5c8f'
+bars_i = ax1.bar(filtered_inp['Inpatient_Visits'], filtered_inp['Total_Encounters'], color=color_b, alpha=0.35, width=0.55, label='Encounter Count')
+ax1.set_xlabel('Prior Inpatient Admissions in Preceding 12 Months', fontsize=11, fontweight='semibold')
+ax1.set_ylabel('Total Encounters (Log Scale)', fontsize=11, fontweight='semibold', color=color_b)
+ax1.set_yscale('log')
+ax1.tick_params(axis='y', labelcolor=color_b)
 
-# Left: 3-class distribution
-bars1 = axes[0].bar(counts_3class.index, counts_3class.values, color=['#2b5c8f', '#e67e22', '#c0392b'], width=0.55, edgecolor='black', linewidth=0.5)
-axes[0].set_title('A: Original 3-Class Readmission Distribution', fontsize=12, fontweight='bold', pad=12)
-axes[0].set_xlabel('Readmission Category', fontsize=11, fontweight='semibold')
-axes[0].set_ylabel('Hospital Encounters', fontsize=11, fontweight='semibold')
-axes[0].set_ylim(0, 65000)
+ax2 = ax1.twinx()
+color_r = '#c0392b'
+ax2.plot(filtered_inp['Inpatient_Visits'], filtered_inp['Readmit_30d_Rate_Pct'], color=color_r, marker='o', linewidth=2.5, markersize=7, label='30-Day Readmission Rate (%)')
+ax2.set_ylabel('30-Day Readmission Rate (%)', fontsize=11, fontweight='semibold', color=color_r)
+ax2.tick_params(axis='y', labelcolor=color_r)
+ax2.set_ylim(0, 42)
 
-for bar, pct in zip(bars1, pcts_3class):
-    y = bar.get_height()
-    axes[0].text(bar.get_x() + bar.get_width()/2., y + 1200, f'{y:,}\\n({pct:.2f}%)', ha='center', va='bottom', fontsize=9.5, fontweight='bold')
+for x, y in zip(filtered_inp['Inpatient_Visits'], filtered_inp['Readmit_30d_Rate_Pct']):
+    ax2.annotate(f'{y:.1f}%', (x, y), textcoords="offset points", xytext=(0, 10), ha='center', fontsize=9.5, fontweight='bold', color=color_r)
 
-# Right: Binary 30-day distribution
-bin_counts = pd.Series({
-    'Not Readmitted <30 Days': len(df) - df['readmit_30d'].sum(),
-    'Readmitted <30 Days (<30)': df['readmit_30d'].sum()
-})
-bin_pcts = (bin_counts / len(df)) * 100
-
-bars2 = axes[1].bar(bin_counts.index, bin_counts.values, color=['#27ae60', '#c0392b'], width=0.45, edgecolor='black', linewidth=0.5)
-axes[1].set_title('B: Binary CMS 30-Day Readmission Benchmark', fontsize=12, fontweight='bold', pad=12)
-axes[1].set_xlabel('Classification Cohort', fontsize=11, fontweight='semibold')
-axes[1].set_ylabel('Hospital Encounters', fontsize=11, fontweight='semibold')
-axes[1].set_ylim(0, 105000)
-
-for bar, pct in zip(bars2, bin_pcts):
-    y = bar.get_height()
-    axes[1].text(bar.get_x() + bar.get_width()/2., y + 1800, f'{y:,}\\n({pct:.2f}%)', ha='center', va='bottom', fontsize=9.5, fontweight='bold')
-
-plt.suptitle('Clinical Outcome Distribution & Severe Target Imbalance (N=101,763)', fontsize=14, fontweight='bold', y=1.02)
+plt.title('Prior Inpatient Utilization as Chief Readmission Driver (8.44% to 34.58%)', fontsize=12, fontweight='bold', pad=12)
 plt.tight_layout()
 plt.show()
 """
 
-m8_interp = """**Analytical Finding on Class Imbalance**:
-The primary target of interest (`<30`) occurs in only **11.16%** of encounters (11,357 cases). This reflects a **~8:1 negative-to-positive class imbalance**. Consequently:
-1. **Accuracy is a Deceptive Metric**: A trivial null model that uniformly predicts "No 30-Day Readmission" yields an accuracy of **88.84%** while failing to identify a single vulnerable patient.
-2. **Evaluation Strategy**: Model validation in Task 3 must prioritize **Precision-Recall AUC (PR-AUC)**, **Brier score calibration**, and **Recall at fixed decision thresholds** over raw accuracy or ROC-AUC alone."""
+m9_inp_interp = """**Clinical Interpretation**: Prior inpatient hospitalization is the single most decisive predictor of readmission in this dataset. Patients with zero prior admissions exhibit an **8.44%** 30-day readmission rate. This escalates to **12.92%** at 1 visit, **20.29%** at 3 visits, and exceeds **34%** for chronic recidivists with 5+ visits. The step-change reflects severe underlying systemic illness and inadequate outpatient care stabilization."""
+
+c9_disch = """# 2. Discharge Disposition vs. Readmission Risk
+disch_bivariate = compute_bivariate_rates(df, group_col='discharge_disposition_desc', target_col='readmitted', min_count=500)
+print("=== TOP DISCHARGE DESTINATIONS VS. READMISSION RATES ===")
+disch_bivariate.head(10)
+"""
+
+c9_disch_vis = """# Visualize readmission by discharge disposition
+plt.figure(figsize=(11, 5.5))
+sorted_disch = disch_bivariate.sort_values(by='Readmit_30d_Rate_Pct', ascending=True)
+
+# Truncate lengthy labels for visual clarity
+short_labels = [s[:45] + ('...' if len(s) > 45 else '') for s in sorted_disch['Group_Value']]
+bars_d = plt.barh(short_labels, sorted_disch['Readmit_30d_Rate_Pct'], color='#2b5c8f', edgecolor='black', linewidth=0.5)
+
+plt.title('30-Day Readmission Rate by Primary Discharge Disposition Destination', fontsize=12, fontweight='bold', pad=12)
+plt.xlabel('30-Day Readmission Rate (%)', fontsize=11, fontweight='semibold')
+plt.ylabel('Discharge Destination Category', fontsize=11, fontweight='semibold')
+plt.xlim(0, 32)
+
+for bar, n in zip(bars_d, sorted_disch['Total_Encounters']):
+    w = bar.get_width()
+    plt.text(w + 0.5, bar.get_y() + bar.get_height()/2., f'{w:.2f}% (N={n:,})', va='center', ha='left', fontsize=9, fontweight='bold')
+
+plt.tight_layout()
+plt.show()
+"""
+
+m9_disch_interp = """**Clinical Interpretation & Data Leakage Caveat**:
+1. **Post-Acute Transitions**: Transfers to Rehabilitation Facilities (**27.71%**) and Skilled Nursing Facilities (**14.66%**) suffer substantially worse 30-day readmission rates than home discharges (**9.30%**), reflecting patient frailty and complex post-discharge care demands.
+2. **Terminal Status Target Leakage**: 1,642 encounters resulted in in-hospital death (`Expired`), all showing an exact **0.00%** readmission rate. Patients who expire during their stay are physically incapable of post-discharge readmission. In Task 3, **all expired records must be excluded prior to training** to prevent the model from learning artificial shortcuts."""
+
+c9_los_box = """# 3. Clinical Intensity: Length of Stay & Medications by Readmission Outcome
+fig, axes = plt.subplots(1, 2, figsize=(13, 5))
+
+# Boxplot of Time in Hospital
+sns.boxplot(data=df, x='readmitted', y='time_in_hospital', order=['NO', '>30', '<30'], palette=['#2b5c8f', '#e67e22', '#c0392b'], ax=axes[0])
+axes[0].set_title('A: Length of Hospital Stay by Readmission Group', fontsize=11, fontweight='bold')
+axes[0].set_xlabel('Readmission Outcome', fontsize=10, fontweight='semibold')
+axes[0].set_ylabel('Time in Hospital (Days)', fontsize=10, fontweight='semibold')
+
+# Boxplot of Number of Medications
+sns.boxplot(data=df, x='readmitted', y='num_medications', order=['NO', '>30', '<30'], palette=['#2b5c8f', '#e67e22', '#c0392b'], ax=axes[1])
+axes[1].set_title('B: Medication Count by Readmission Group', fontsize=11, fontweight='bold')
+axes[1].set_xlabel('Readmission Outcome', fontsize=10, fontweight='semibold')
+axes[1].set_ylabel('Number of Medications', fontsize=10, fontweight='semibold')
+
+plt.suptitle('Comparison of Inpatient Complexity Metrics Across Readmission Cohorts', fontsize=13, fontweight='bold', y=1.02)
+plt.tight_layout()
+plt.show()
+"""
+
+m9_los_interp = """**Clinical Interpretation**: Patients readmitted within 30 days had longer median hospital stays (4.0 days; mean = 4.77) and higher median medication counts (15.0; mean = 16.71) compared to patients not readmitted (median stay = 3.0 days; mean = 4.18; mean medications = 15.67). While statistically significant, the overlap in interquartile ranges demonstrates that length of stay alone cannot serve as an isolated risk discriminator."""
 
 nb.cells.extend([
-    nbf.v4.new_markdown_cell(m8),
-    nbf.v4.new_code_cell(c8),
-    nbf.v4.new_markdown_cell(m8_vis),
-    nbf.v4.new_code_cell(c8_vis),
-    nbf.v4.new_markdown_cell(m8_interp)
+    nbf.v4.new_markdown_cell(m9),
+    nbf.v4.new_code_cell(c9_inp),
+    nbf.v4.new_code_cell(c9_inp_vis),
+    nbf.v4.new_markdown_cell(m9_inp_interp),
+    nbf.v4.new_code_cell(c9_disch),
+    nbf.v4.new_code_cell(c9_disch_vis),
+    nbf.v4.new_markdown_cell(m9_disch_interp),
+    nbf.v4.new_code_cell(c9_los_box),
+    nbf.v4.new_markdown_cell(m9_los_interp)
 ])
 
 with open(nb_path, 'w', encoding='utf-8') as f:
     nbf.write(nb, f)
 
-print(f"Updated {nb_path} with Section 8.")
+print(f"Updated {nb_path} with Section 9.")
