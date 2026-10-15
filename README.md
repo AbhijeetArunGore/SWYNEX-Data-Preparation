@@ -1,125 +1,148 @@
-# SWYNEX – Clinical Data Preparation
-## Task 1: Data Preparation
+# SWYNEX Technologies — Clinical Data Science Pipeline
 
-This project was completed as part of my internship at **SWYNEX Technologies**.  
-The objective of this task was to prepare a real-world clinical dataset for downstream data-science analysis by identifying and handling data-quality issues, including missing values, inconsistent data types, duplicate records, and categorical inconsistencies.
+[![CI Pipeline](https://github.com/AbhijeetArunGore/SWYNEX-Data-Preparation/actions/workflows/test.yml/badge.svg)](https://github.com/AbhijeetArunGore/SWYNEX-Data-Preparation/actions)
+[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Code Style: Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
----
-
-## Dataset
-- **Dataset**: Diabetes 130-US Hospitals for Years 1999–2008
-- **Source**: UCI Machine Learning Repository
-- **Domain**: Healthcare Analytics / Clinical Informatics
-- **Scope**: 101,766 clinical hospital encounters across 130 US hospital facilities containing 50 initial clinical, demographic, and administrative variables.
+This repository contains the end-to-end data science work completed during my internship at **SWYNEX Technologies**. The project is structured into modular internship tasks investigating diabetic inpatient encounters across 130 US hospitals (1999–2008) sourced from the **UCI Machine Learning Repository**.
 
 ---
 
-## Objectives
-- **Inspect** the raw dataset (`df.shape`, `df.info()`, `df.describe()`, `df.head()`).
-- **Identify** explicit (`NaN`) and implicit (`?`, `Unknown/Invalid`) missing values.
-- **Detect** duplicate records and distinguish encounter-level primary keys from repeat patient admissions.
-- **Validate** and convert feature data types to appropriate physical representation.
-- **Standardize** categorical values, age brackets, medication codes, and ICD-9 diagnosis categories.
-- **Handle** missing and invalid values using context-appropriate clinical imputation rather than naive row deletion (`dropna()`).
-- **Document** all data-preparation decisions under a formal **Problem → Decision → Reason** governance framework.
-- **Validate** the clean dataset through statistical boundary and integrity checks.
-- **Export** the prepared dataset in both CSV and Apache Parquet formats for future EDA and 30-day hospital readmission predictive modeling.
+## 📌 Project Navigation
+- 📓 **Task 1 Notebook**: [`SWYNEX_Data_Preparation.ipynb`](SWYNEX_Data_Preparation.ipynb) — Ingestion, quality auditing, contextual imputation, and relational ID mapping.
+- 📓 **Task 2 Notebook**: [`notebooks/02_exploratory_data_analysis.ipynb`](notebooks/02_exploratory_data_analysis.ipynb) — Comprehensive distribution profiling, bivariate risk analysis, hypothesis testing, and anti-leakage governance.
+- 📄 **Executive EDA Report**: [`reports/eda/eda_summary_report.md`](reports/eda/eda_summary_report.md) — Clinical findings and data science decision matrix.
+- 📚 **Data Dictionary**: [`docs/DATA_DICTIONARY.md`](docs/DATA_DICTIONARY.md) — 54-feature clinical schema documentation.
+- 📊 **Visual Artifacts**: [`reports/eda/figures/`](reports/eda/figures/) — Publication-quality generated figures.
 
 ---
 
-## Repository Structure
+## 📂 Repository Structure
 ```
 SWYNEX-Data-Preparation/
+├── .github/workflows/
+│   └── test.yml                         # Automated CI testing pipeline (pytest)
 ├── data/
 │   ├── raw/
-│   │   ├── diabetic_data.csv          # Raw clinical encounter dataset
-│   │   └── IDS_mapping.csv            # Relational ID mapping dictionary
+│   │   ├── diabetic_data.csv            # Original UCI clinical dataset (101,766 x 50)
+│   │   └── IDS_mapping.csv              # Relational lookup mappings (admission/discharge IDs)
 │   └── processed/
-│       ├── diabetic_data_clean.csv    # Exported clean dataset (CSV)
-│       └── diabetic_data_clean.parquet# Exported clean dataset (Parquet)
-├── src/
-│   ├── __init__.py                    # Core package init
-│   └── utils.py                       # Modular data cleaning functions
-├── tests/
-│   └── test_preprocessing.py          # Pytest unit tests
+│       ├── diabetic_data_clean.csv      # Cleaned baseline dataset (101,763 x 54, 0 nulls)
+│       └── diabetic_data_clean.parquet  # High-performance Parquet format
 ├── docs/
-│   └── DATA_DICTIONARY.md             # Dataset schema documentation
-├── .github/workflows/
-│   └── test.yml                       # CI testing pipeline
-├── SWYNEX_Data_Preparation.ipynb      # Main execution Jupyter Notebook
-├── requirements.txt                   # Dependency specifications
-└── README.md                          # Repository documentation
+│   └── DATA_DICTIONARY.md               # Clinical feature definitions & categories
+├── notebooks/
+│   └── 02_exploratory_data_analysis.ipynb # Task 2 Main Interactive EDA Notebook
+├── reports/
+│   └── eda/
+│       ├── eda_summary_report.md        # Executive Task 2 Analytical Report
+│       └── figures/                     # Exported 300-DPI visual artifacts
+│           ├── 01_target_distribution.png
+│           ├── 02_numerical_distributions.png
+│           ├── 03_prior_inpatient_utilization.png
+│           ├── 04_discharge_disposition_risk.png
+│           ├── 05_correlation_heatmap.png
+│           └── 06_hba1c_and_medchange.png
+├── scripts/
+│   ├── compute_eda_stats.py             # Empirical statistics calculation script
+│   ├── generate_eda_figures.py          # Automated figure generation script
+│   └── validate_dataset.py              # Task 1 dataset integrity validator
+├── src/
+│   ├── __init__.py                      # Package initialization
+│   ├── utils.py                         # Task 1 data preparation functions
+│   └── eda.py                           # Task 2 modular EDA & statistical testing utilities
+├── tests/
+│   ├── test_preprocessing.py            # Task 1 unit tests
+│   └── test_eda.py                      # Task 2 EDA functions unit test suite
+├── SWYNEX_Data_Preparation.ipynb        # Task 1 Main Data Preparation Notebook
+├── requirements.txt                     # Pinned project dependencies
+└── README.md                            # Comprehensive project documentation
 ```
 
 ---
 
-## Data Preparation Workflow
+## 🔬 Dataset Overview
+- **Dataset**: Diabetes 130-US Hospitals for Years 1999–2008
+- **Source**: UCI Machine Learning Repository
+- **Scope**: 101,763 cleaned inpatient admissions across 71,515 unique patients and 130 hospital facilities.
+- **Analytical Role**: Historical observational cohort of adult diabetic patients with inpatient stays between 1 and 14 days.
+
+---
+
+# 🛠️ Task 1: Data Preparation
+
+### Objective & Accomplishments
+Task 1 addressed extensive data quality challenges inherent to real-world healthcare administration:
+- **Implicit Missingness**: Replaced `'?'` and invalid strings with standardized `NaN` values.
+- **Extreme Missingness Pruning**: Excluded `weight` (>96.8% missing) to avoid introducing extreme artificial variance.
+- **Informative Missingness Retention**: Retained administrative missingness in `payer_code` (39.56%) and `medical_specialty` (49.08%) as explicit `'Missing'` categories.
+- **Zero-Variance Removal**: Dropped constant features (`examide`, `citoglipton`).
+- **ICD-9 Categorization**: Condensed 900+ distinct diagnostic codes into 9 standard clinical categories (Circulatory, Respiratory, Digestive, Diabetes, Injury, Musculoskeletal, Genitourinary, Neoplasms, Other).
+- **Relational ID Mapping**: Parsed `IDS_mapping.csv` to map numerical integer codes into readable clinical text labels.
+- **Export**: Standardized output to `data/processed/diabetic_data_clean.csv` (101,763 rows, 54 columns, 0 nulls).
+
+---
+
+# 📊 Task 2: Exploratory Data Analysis (EDA)
+
+### Objective
+Task 2 delivers an evidence-based exploratory evaluation of the prepared cohort to uncover patient sub-populations, test clinical hypotheses, evaluate severe class imbalance, and formulate strict data-leakage prevention guardrails for downstream machine learning.
+
+> **Note on Modeling Scope**: Task 2 is strictly descriptive and exploratory. It does not perform predictive model training or hyperparameter tuning.
+
 ```mermaid
 graph TD
-    A[Raw Clinical Dataset] --> B[Data Inspection & Profiling]
-    B --> C[Missing-Value Identification]
-    C --> D[Duplicate Detection]
-    D --> E[Relational ID Mapping]
-    E --> F[Categorical Standardization]
-    F --> G[Contextual Imputation]
-    G --> H[Range & Non-Negativity Validation]
-    H --> I[CSV & Parquet Export]
+    A[Cleaned Inpatient Dataset] --> B[Data Validation & Profiling]
+    B --> C[Univariate Distributions & Skewness Audit]
+    C --> D[Missingness & Sentinel Value Analysis]
+    D --> E[Target Outcome & Class Imbalance Analysis]
+    E --> F[Bivariate Analysis Across Clinical Domains]
+    F --> G[Inferential Hypothesis Testing]
+    G --> H[Spearman Collinearity Heatmap]
+    H --> I[8 Evidence-Based Clinical Insights]
+    I --> J[Anti-Leakage Governance & Modeling Rules]
 ```
 
----
+### Key Analytical Findings & Verified Insights
 
-## Key Data-Quality Issues & Treatments
-
-| Issue Identified | Treatment Applied |
-| :--- | :--- |
-| **Implicit Missing Values (`?`)** | Replaced with standard `NaN` and imputed contextually based on clinical meaning. |
-| **Extreme Missingness (`weight` >96.8%)** | Dropped column to eliminate noise and artificial variance. |
-| **Administrative Missingness (`payer_code`, `medical_specialty`)** | Retained as explicit `'Missing'` category (informative missingness). |
-| **Demographic Missingness (`race` 2.23%)** | Imputed as `'Unknown'` to preserve valid encounter records. |
-| **Invalid Demographics (`gender` 3 records)** | Filtered out 3 invalid records (<0.003% of dataset). |
-| **Duplicate Records** | 0 exact row duplicates; 101,763 unique encounter IDs preserved. |
-| **Incorrect Data Types & IDs** | Mapped integer keys (`admission_type_id`, etc.) via `IDS_mapping.csv` to descriptive text labels. |
-| **Zero-Variance Features (`examide`, `citoglipton`)** | Dropped constant features carrying zero statistical entropy. |
-| **High-Cardinality Diagnoses** | Mapped 900+ ICD-9 codes into 9 primary clinical disease categories (Circulatory, Diabetes, Respiratory, etc.). |
+| # | Investigated Domain | Computed Empirical Evidence | Key Clinical & Modeling Finding |
+|---|---|---|---|
+| **1** | **Prior Inpatient Utilization** | Rate rises from **8.44%** (0 visits) to **12.92%** (1 visit), **20.29%** (3 visits), and **34.58%** (6 visits) ($U=401,064,764, p < 10^{-15}$). | Prior acute hospitalizations serve as the dominant leading indicator of 30-day early readmission. |
+| **2** | **Target Class Imbalance** | 30-day readmissions (`<30`) comprise only **11.16%** of encounters (11,357 of 101,763). | ~8:1 class imbalance invalidates raw accuracy (trivial null model achieves 88.84% accuracy). PR-AUC and cost-sensitive loss are mandatory. |
+| **3** | **Post-Acute Care Transfers** | Rehabilitation discharges had **27.71%** 30-day readmission; Skilled Nursing Facilities (SNF) had **14.66%**, vs **9.30%** for home discharges. | Transitional sub-acute destinations flag severe medical frailty and transitional care vulnerability. |
+| **4** | **Terminal Event Leakage** | 1,642 encounters resulted in inpatient death (`Expired`), all showing **0.00%** readmission. | **Mandatory Filtering Rule**: All expired encounters must be removed prior to model training to prevent target leakage. |
+| **5** | **Length of Stay & Medications** | Length of stay correlates moderately with medications ($\rho = 0.465, p < 10^{-15}$), but median stay differs by only 1 day (<30: 4.0 vs NO: 3.0 days). | Hospital duration reflects inpatient care intensity but cannot serve as a standalone risk predictor. |
+| **6** | **Glycemic Testing Adherence** | 84,745 encounters (**83.28%**) had no documented HbA1c test (`Not Tested`), showing **11.42%** readmissions vs **9.66%** for normal tested patients. | Omission of glycemic testing was pervasive in 1999–2008 and acts as a proxy for structured clinical care adherence. |
+| **7** | **Medication Titration** | Dosage adjustments (`change` = Ch) had **12.24%** readmissions vs **10.23%** for stable regimens ($\chi^2 = 215.94, p = 1.289 \times 10^{-47}$). | In-hospital medication titration flags acute unstable blood glucose requiring post-discharge outpatient stabilization. |
+| **8** | **Intra-Patient Clustering** | 101,763 encounters belong to 71,515 distinct patients (**29.72% repeat admissions**, up to 40 per patient). | Standard random train/test splits cause severe data leakage. Future validation must enforce **GroupKFold** on `patient_nbr`. |
 
 ---
 
-## Preprocessing Assumptions & Decisions
+## 🧪 Inferential Statistical Testing Summary
 
-Every major cleaning decision was framed under the **Problem → Decision → Reason** matrix:
-
-1. **Implicit Missing Indicators (`?`)**  
-   *Problem*: Raw dataset encodes missingness as `'?'` strings.  
-   *Decision*: Converted all `'?'` entries to standard `NaN`.  
-   *Reason*: Standardizes pandas missingness handling and prevents placeholder strings from corrupting statistical functions.
-
-2. **Extreme Missingness in `weight` (96.85%)**  
-   *Problem*: `weight` feature is missing in 98,569 out of 101,766 records.  
-   *Decision*: Excluded `weight` feature from the dataset.  
-   *Reason*: Imputing >96% of data would introduce extreme artificial bias and noise without providing clinical value.
-
-3. **Informative Missingness in Administrative Features (`payer_code` & `medical_specialty`)**  
-   *Problem*: High missing rates in `payer_code` (39.56%) and `medical_specialty` (49.08%).  
-   *Decision*: Encoded missing values as an explicit category `'Missing'`.  
-   *Reason*: Missingness in administrative attributes often correlates with self-pay/uninsured status or unassigned specialty (informative missingness); preserving it avoids dropping ~50% of hospital encounters.
-
-4. **Zero-Variance Features (`examide` & `citoglipton`)**  
-   *Problem*: `examide` and `citoglipton` contain identical values (`'No'`) across all rows.  
-   *Decision*: Dropped both columns.  
-   *Reason*: Zero variance features provide zero predictive signal or information entropy.
-
-5. **High Cardinality in ICD-9 Diagnosis Codes**  
-   *Problem*: Raw diagnosis columns (`diag_1`, `diag_2`, `diag_3`) contain over 900 distinct codes.  
-   *Decision*: Mapped codes into 9 clinical categories (Circulatory, Respiratory, Digestive, Diabetes, Injury, Musculoskeletal, Genitourinary, Neoplasms, Other).  
-   *Reason*: Reduces feature space sparsity, mitigates overfitting risk, and standardizes features according to clinical literature.
+| Test Applied | Null Hypothesis ($H_0$) | Test Statistic | p-Value | Practical Interpretation |
+| :--- | :--- | :---: | :---: | :--- |
+| **Mann-Whitney U** | Inpatient visits distribution is identical between `<30` and `NO` groups. | $U = 401,064,764$ | $< 10^{-15}$ | **Reject $H_0$**: Readmitted patients averaged 1.224 prior admissions vs 0.382 for non-readmitted patients (>3.2x higher). |
+| **Mann-Whitney U** | Length of stay distribution is identical between `<30` and `NO` groups. | $U = 347,113,746$ | $1.595 \times 10^{-83}$ | **Reject $H_0$**: Readmitted cohort stays are significantly longer (median = 4.0 vs 3.0 days). |
+| **Pearson Chi-Square** | Readmission outcome is independent of diabetes medication change (`change`). | $\chi^2 = 215.94$ | $1.289 \times 10^{-47}$ | **Reject $H_0$**: Significant dependency (Cramer's $V = 0.0461$); regimen changes correlate with elevated readmissions. |
+| **Pearson Chi-Square** | Readmission outcome is independent of age bracket (`age`). | $\chi^2 = 313.33$ | $8.676 \times 10^{-56}$ | **Reject $H_0$**: Elderly cohorts (70–90 years) exhibit significantly elevated readmission rates. |
 
 ---
 
-## Tools & Setup
-- **Python 3.12**
-- **Dependencies**: `pandas`, `numpy`, `matplotlib`, `seaborn`, `pyarrow`, `pytest`
+## 🛡️ Anti-Leakage Governance & Modeling Guardrails
 
-### Setup Instructions
+Before proceeding to Task 3 (Predictive Modeling), the following data governance requirements are established:
+1. **Exclude Expired Patients**: Remove 1,642 encounters where `discharge_disposition_id` $\in \{11, 19, 20, 21\}$.
+2. **Enforce Grouped Cross-Validation**: Split data strictly by `patient_nbr` using `GroupKFold` to prevent patient records from leaking across folds.
+3. **Segregate Feature Timing**: Distinguish admission-time variables (demographics, prior visits) from pre-discharge variables (total stay, discharge destination).
+4. **Target Metric Selection**: Optimize models for **PR-AUC** and recall at calibrated risk cutoffs rather than accuracy.
+
+---
+
+## 💻 Installation & Reproduction Guide
+
+### Environment Setup
 ```bash
 # Clone the repository
 git clone https://github.com/AbhijeetArunGore/SWYNEX-Data-Preparation.git
@@ -127,36 +150,42 @@ cd SWYNEX-Data-Preparation
 
 # Install requirements
 pip install -r requirements.txt
+```
 
-# Run unit tests
-pytest tests/
+### Run Unit Tests
+```bash
+# Run complete test suite across Task 1 and Task 2
+python -m pytest tests/
+```
+
+### Generate Visual Artifacts
+```bash
+# Generate all publication-quality figures into reports/eda/figures/
+python scripts/generate_eda_figures.py
+```
+
+### Execute the EDA Notebook
+```bash
+# Launch Jupyter Notebook
+jupyter notebook notebooks/02_exploratory_data_analysis.ipynb
 ```
 
 ---
 
-## Output
-The final cleaned dataset is stored in `data/processed/`:
-- `diabetic_data_clean.csv` (101,763 rows x 47 features, 0 null values)
-- `diabetic_data_clean.parquet` (Optimized column-oriented binary format)
+## ⚠️ Limitations
+- **Historical Observational Data**: Collected from 1999–2008 across 130 US hospitals; does not reflect modern diabetes pharmaceuticals (e.g. GLP-1 agonists, SGLT2 inhibitors).
+- **No Causal Inference**: Associations reflect empirical patterns and cannot be interpreted as direct causal mechanisms.
+- **Billing Code Proxies**: Diagnoses rely on ICD-9 administrative codes subject to billing incentives.
 
 ---
 
-## Future Scope
-This prepared dataset serves as the standardized clinical baseline for:
-- **Task 2**: Comprehensive Exploratory Data Analysis (EDA) & Clinical Hypothesis Testing.
-- **Task 3**: Predictive Machine Learning Modeling for 30-Day Hospital Readmission Risk.
-
----
-
-## Author
+## 👤 Author
 **Abhijeet Arun Gore**  
 Data Science Intern, SWYNEX Technologies  
-GitHub: [AbhijeetArunGore](https://github.com/AbhijeetArunGore)
+GitHub: [@AbhijeetArunGore](https://github.com/AbhijeetArunGore)  
+LinkedIn: [Abhijeet Arun Gore](https://www.linkedin.com/in/abhijeet-gore-04a60124b/)
 
 ---
 
-## License & Attribution
-This project is created for internship evaluation at **SWYNEX Technologies**.
-Dataset sourced from UCI Machine Learning Repository.
-
-<!-- Release Status: Verified & Production Ready -->
+## 📜 License
+This repository is licensed under the MIT License. See [LICENSE](LICENSE) for details.
