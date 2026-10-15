@@ -235,3 +235,118 @@ def group_continuous_stats(
 
     return pd.DataFrame(records)
 
+
+def perform_mann_whitney_u(
+    df: pd.DataFrame,
+    continuous_col: str,
+    group_col: str,
+    group_val1: str,
+    group_val2: str
+) -> Dict[str, Union[float, int, str]]:
+    """Perform non-parametric two-sample Mann-Whitney U test on skewed distributions.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Input clinical dataset.
+    continuous_col : str
+        Numerical variable being compared.
+    group_col : str
+        Grouping column.
+    group_val1 : str
+        Label of first cohort.
+    group_val2 : str
+        Label of second cohort.
+
+    Returns
+    -------
+    Dict[str, Union[float, int, str]]
+        Dictionary with test statistic U, p-value, sample sizes, and group medians.
+    """
+    g1 = df[df[group_col] == group_val1][continuous_col].dropna()
+    g2 = df[df[group_col] == group_val2][continuous_col].dropna()
+
+    if len(g1) == 0 or len(g2) == 0:
+        raise ValueError("Insufficient observations in one or both cohorts.")
+
+    res = stats.mannwhitneyu(g1, g2, alternative='two-sided')
+
+    return {
+        'test_name': 'Mann-Whitney U Test (Two-Sided)',
+        'continuous_variable': continuous_col,
+        'group_1': f"{group_val1} (N={len(g1):,})",
+        'group_2': f"{group_val2} (N={len(g2):,})",
+        'median_group_1': round(float(g1.median()), 2),
+        'median_group_2': round(float(g2.median()), 2),
+        'u_statistic': float(res.statistic),
+        'p_value': float(res.pvalue),
+        'statistically_significant': bool(res.pvalue < 0.05)
+    }
+
+
+def perform_chi_square(
+    df: pd.DataFrame,
+    cat_col1: str,
+    cat_col2: str
+) -> Dict[str, Union[float, int, str]]:
+    """Perform Pearson Chi-Square test of independence with Cramer's V effect size.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Input clinical dataset.
+    cat_col1 : str
+        First categorical variable.
+    cat_col2 : str
+        Second categorical variable.
+
+    Returns
+    -------
+    Dict[str, Union[float, int, str]]
+        Dictionary containing chi2 statistic, p-value, degrees of freedom, and Cramer's V.
+    """
+    contingency = pd.crosstab(df[cat_col1], df[cat_col2])
+    chi2, p_val, dof, _ = stats.chi2_contingency(contingency)
+
+    # Compute Cramer's V
+    n = contingency.sum().sum()
+    min_dim = min(contingency.shape[0] - 1, contingency.shape[1] - 1)
+    cramers_v = float(np.sqrt(chi2 / (n * min_dim))) if (n > 0 and min_dim > 0) else 0.0
+
+    return {
+        'test_name': 'Pearson Chi-Square Test of Independence',
+        'variable_1': cat_col1,
+        'variable_2': cat_col2,
+        'chi2_statistic': round(float(chi2), 3),
+        'p_value': float(p_val),
+        'degrees_of_freedom': int(dof),
+        'cramers_v': round(cramers_v, 4),
+        'statistically_significant': bool(p_val < 0.05)
+    }
+
+
+def compute_correlation_matrix(
+    df: pd.DataFrame,
+    columns: List[str],
+    method: str = 'spearman'
+) -> pd.DataFrame:
+    """Calculate pairwise correlation matrix for meaningful clinical numeric variables.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Input dataset.
+    columns : List[str]
+        List of continuous or discrete clinical features.
+    method : str, default='spearman'
+        Correlation method ('spearman' or 'pearson').
+
+    Returns
+    -------
+    pd.DataFrame
+        Correlation matrix rounded to 3 decimal places.
+    """
+    valid_cols = [c for c in columns if c in df.columns]
+    return df[valid_cols].corr(method=method).round(3)
+
+
